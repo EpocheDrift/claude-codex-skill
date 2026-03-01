@@ -51,6 +51,81 @@ When a user asks for code, Claude internally decides:
 - Fix integration issues
 - Run tests if available
 
+### Phase D: Report (Claude)
+
+After Phase C completes, output this summary block before the final response:
+
+```
+── Codex delegation complete ──────────────────
+  Agents:      {N} ({names, e.g. backend + frontend})
+  Generated:   {X} files · {Y} LOC · {Z}s
+  Validation:  {M}/{N} endpoints ✓
+  Est. savings: {range} fewer Claude tokens
+──────────────────────────────────────────────
+```
+
+**Token savings estimate — pick range by task type:**
+
+| Task type | Estimate |
+|-----------|----------|
+| REST API / CRUD endpoints | ~40-50% |
+| Frontend components (React/Vue) | ~35-45% |
+| Database models / ORM schemas | ~50-60% |
+| Unit / integration tests | ~60-70% |
+| ROS 2 nodes / templates | ~45-55% |
+| Config files (Docker/K8s) | ~30-40% |
+| Default / mixed | ~40% |
+
+Infer task type from: what API_CONTRACT.md describes, what file types were generated,
+what frameworks are present. All savings figures are estimates — no session parsing needed.
+
+**If delegation partially failed, use this format instead:**
+
+```
+── Codex delegation — partial ─────────────────
+  Status: ⚠️ Partial success
+  Backend agent:   ✓ Completed ({M}/{N} endpoints)
+  Frontend agent:  ✗ Failed ({brief reason})
+  Fallback: Claude completed the failed portion manually
+  Total time: {actual}s
+  Est. savings: ~{reduced}% (vs ~{target}% target)
+  Suggestion: {one actionable sentence}
+──────────────────────────────────────────────
+```
+
+**Detailed mode (on request only):**
+
+If the user asks for more detail ("show detailed report", "how did Codex do?"):
+
+```
+── Codex delegation — detailed ────────────────
+  Delegation rationale:
+    - Backend:  {qualitative reason, e.g. "20 CRUD endpoints, clear contract"} → Codex
+    - Frontend: {qualitative reason, e.g. "10 components, repetitive structure"} → Codex
+
+  Execution:
+    - Backend agent:  {X1} files · {Y1} LOC · {Z1}s
+    - Frontend agent: {X2} files · {Y2} LOC · {Z2}s
+    - Parallel speedup: ~{N}x vs sequential
+
+  Validation:
+    - Backend:  {M1}/{N1} endpoints ✓
+    - Frontend: {M2}/{N2} API calls ✓
+    - Issues fixed: {list any mismatches corrected, or "none"}
+
+  Token estimate:
+    - Claude baseline (est.): ~{baseline} tokens if done directly
+    - Claude actual:          ~{actual} tokens (architecture + validation only)
+    - Savings:                ~{pct}%
+    - Codex tokens:           ~{codex} tokens (free via ChatGPT Plus)
+
+  Task type: {rest_api_crud | frontend_components | orm_models | tests | ros2_nodes | ...}
+──────────────────────────────────────────────
+```
+
+Note: all token figures in detailed mode are estimates based on task complexity —
+not parsed from session files. Qualitative rationale, not numeric scores.
+
 ## 4. Examples
 
 ### Example: "Build a blog system"
@@ -155,7 +230,7 @@ After completing a delegation (Phase C done), append one line to
 `.claude/skills/orchestrate/performance_log.jsonl`:
 
 ```json
-{"timestamp": "<ISO8601>", "task": "<brief description>", "delegated": true, "success": true, "endpoints": 20, "validation": "20/20", "claude_output_tokens": 14166, "claude_api_calls": 77, "codex_agents": 2, "duration_s": 139, "notes": ""}
+{"timestamp": "<ISO8601>", "task": "<brief description>", "task_type": "rest_api_crud", "delegated": true, "success": true, "endpoints": 20, "files": 24, "loc": 1253, "validation": "20/20", "claude_output_tokens": 14166, "claude_api_calls": 77, "codex_agents": 2, "duration_s": 139, "notes": ""}
 ```
 
 For non-delegated tasks (Claude did it all):
