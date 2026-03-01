@@ -34,10 +34,11 @@ echo "Backend:  $BACKEND_DIR"
 echo ""
 
 # --- Step 1: Extract endpoints from contract ---
-CONTRACT_ENDPOINTS=$(grep -oEi '(GET|POST|PUT|DELETE|PATCH)\s+/[a-zA-Z0-9/_{}:.-]+' "$CONTRACT" \
+CONTRACT_ENDPOINTS=$(grep -oEi '(GET|POST|PUT|DELETE|PATCH)\s*\|?\s*/[a-zA-Z0-9/_{}:.-]+' "$CONTRACT" \
   | tr '[:lower:]' '[:upper:]' \
+  | sed -E 's/[[:space:]]*\|[[:space:]]*/ /' \
   | sed 's/  */ /' \
-  | sort -u)
+  | sort -u || true)
 
 if [ -z "$CONTRACT_ENDPOINTS" ]; then
   echo -e "${YELLOW}WARNING: No endpoints found in contract. Check the format.${NC}"
